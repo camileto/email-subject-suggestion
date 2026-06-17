@@ -58,7 +58,7 @@ Request body:
   },
   "products": [
     {
-      "name": "Tênis Runner",
+      "name": "Runner Sneakers",
       "category": "fitness",
       "brand": "Acme",
       "price_full": 300,
@@ -68,7 +68,7 @@ Request body:
   ],
   "sent_subjects": [
     {
-      "subject": "Maria, seu tênis te espera",
+      "subject": "Maria, your sneakers are waiting",
       "trigger": "curiosity",
       "opened": true,
       "clicked": false,
@@ -81,7 +81,7 @@ Request body:
   },
   "metric_priority": ["conversion", "click", "open"],
   "num_variants": 3,
-  "language": "pt-BR"
+  "language": "en"
 }
 ```
 
@@ -94,6 +94,24 @@ the metric closest to real business value, so it's preferred whenever data
 for it exists; open rate is the noisiest signal and only used as a last
 resort.
 
+#### `language`
+
+Free-form string, not validated or restricted by the API — it's passed
+straight to the LLM as the language to write the subject lines in, so
+anything the model itself can write well in works. Examples:
+
+| Code | Language |
+|------|----------|
+| `en` | English |
+| `pt-BR` | Portuguese (Brazil) |
+| `es` | Spanish |
+| `fr` | French |
+| `de` | German |
+| `it` | Italian |
+
+There's no fixed list enforced in code — these are just examples of values
+that work well, not a guarantee of support.
+
 Response:
 
 ```json
@@ -101,7 +119,7 @@ Response:
   "customer_id": "123",
   "variants": [
     {
-      "subject": "Maria, ainda dá tempo de levar o Runner",
+      "subject": "Maria, there's still time to grab the Runner",
       "trigger": "loss_aversion",
       "rationale": "Builds on a discount that's about to disappear, similar to what previously worked for this customer.",
       "similarity_to_history": 0.41,
