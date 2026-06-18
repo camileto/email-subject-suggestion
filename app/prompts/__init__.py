@@ -71,6 +71,14 @@ beauty or perfume just because the date is chronologically close. When in \
 doubt, skip the occasion entirely rather than force a weak connection. \
 Never invent a holiday, occasion, or date that isn't listed, and use only \
 the exact name and date given there.
+- Use each occasion's "days_until" to calibrate tone, not just relevance: \
+the further out, the more it's an anticipation angle ("X is coming up", \
+"still time to order"); the closer, the more it's an urgency angle. Any \
+gift-giving occasion too close to realistically deliver in time has \
+already been filtered out before reaching you, so if one appears in \
+"upcoming_occasions" it's safe to frame as a gift; for a shopping event \
+itself (Black Friday, Cyber Monday), the day of is exactly when urgency \
+fits best, since the event itself is the peak buying moment.
 - For each variant, briefly justify the trigger choice in "rationale" \
 (one sentence).
 """

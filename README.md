@@ -199,6 +199,27 @@ isn't shared across multiple workers/replicas. That's fine at this volume
 free tier), but if this ever runs at a scale where that matters, swap it
 for a shared store like Redis.
 
+**Black Friday / Cyber Monday.** Calendarific only tags these under the
+`US` country bucket, even though the date itself is the same worldwide
+(Brazil included). So for any other country, this service also checks the
+real `US` entry for these two specific names and borrows it — never
+re-derives the date with its own formula, and never overrides a
+country's own entry if Calendarific ever adds one.
+
+**Lead time is enforced in code, not by prompt.** A subject offering a
+Mother's Day gift the day before Mother's Day is useless — shipping won't
+make it. The first version of this rule just told the LLM not to do that,
+and `gpt-4o-mini` followed it inconsistently — testing it side by side
+with `gpt-4o` showed the same gap, just smaller, so the fix isn't "use a
+better model." `gift_occasion_lead_time_days` (default `2`) is enforced
+in [services/occasions.py](app/services/occasions.py) instead: any
+gift-giving occasion (Christmas, Mother's/Father's Day, Valentine's)
+closer than that is dropped from `upcoming_occasions` before the LLM ever
+sees it, so there's nothing left for it to misuse. Shopping events
+(Black Friday, Cyber Monday) are exempt — the day of is exactly when
+they're useful, since the event itself is the peak moment, not a delivery
+deadline.
+
 **Example.** A BBQ product, requested a few days before Father's Day:
 
 ```json

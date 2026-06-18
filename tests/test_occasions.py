@@ -80,7 +80,112 @@ def test_get_upcoming_occasions_caches_per_country_year(monkeypatch):
 
     monkeypatch.setattr(occasions_module, "fetch_holidays", fake_fetch)
 
+    # Non-US country also fetches "US" once, to check for Black Friday/Cyber
+    # Monday — so the first call hits the network twice (BR + US), and the
+    # second call should reuse both cache entries (0 new fetches).
     get_upcoming_occasions("BR", date(2026, 12, 1), lookahead_days=10)
+    assert call_count["n"] == 2
+
     get_upcoming_occasions("BR", date(2026, 12, 1), lookahead_days=10)
+    assert call_count["n"] == 2
+
+
+def test_get_upcoming_occasions_does_not_double_fetch_when_country_is_us(monkeypatch):
+    occasions_module._cache.clear()
+    call_count = {"n": 0}
+
+    def fake_fetch(country: str, year: int) -> list[dict]:
+        call_count["n"] += 1
+        return [_holiday("Christmas", "2026-12-25")]
+
+    monkeypatch.setattr(occasions_module, "fetch_holidays", fake_fetch)
+
+    get_upcoming_occasions("US", date(2026, 12, 1), lookahead_days=10)
 
     assert call_count["n"] == 1
+
+
+def test_get_upcoming_occasions_borrows_black_friday_from_us(monkeypatch):
+    occasions_module._cache.clear()
+    by_country = {
+        "BR": [_holiday("Republic Day", "2026-11-15")],
+        "US": [_holiday("Black Friday", "2026-11-27", type_="Observance"), _holiday("Veterans Day", "2026-11-11")],
+    }
+    monkeypatch.setattr(occasions_module, "fetch_holidays", lambda country, year: by_country[country])
+
+    occasions = get_upcoming_occasions("BR", date(2026, 11, 1), lookahead_days=30)
+
+    names = [o["name"] for o in occasions]
+    assert "Black Friday" in names
+    assert "Veterans Day" not in names  # only the specific shopping events are borrowed
+    assert "Republic Day" in names
+
+
+def test_get_upcoming_occasions_prefers_country_specific_black_friday_over_us_borrow(monkeypatch):
+    occasions_module._cache.clear()
+    by_country = {
+        "BR": [_holiday("Black Friday", "2026-11-20", type_="Observance")],
+        "US": [_holiday("Black Friday", "2026-11-27", type_="Observance")],
+    }
+    monkeypatch.setattr(occasions_module, "fetch_holidays", lambda country, year: by_country[country])
+
+    occasions = get_upcoming_occasions("BR", date(2026, 11, 1), lookahead_days=30)
+
+    black_fridays = [o for o in occasions if o["name"] == "Black Friday"]
+    assert len(black_fridays) == 1
+    assert black_fridays[0]["date"] == "2026-11-20"
+
+
+def test_get_upcoming_occasions_drops_gift_occasion_inside_lead_time(monkeypatch):
+    occasions_module._cache.clear()
+    monkeypatch.setattr(
+        occasions_module,
+        "fetch_holidays",
+        lambda country, year: [_holiday("Mother's Day", "2026-06-18")],
+    )
+
+    # reference_date is the day before Mother's Day: days_until=1, below the default lead time of 2.
+    occasions = get_upcoming_occasions("BR", date(2026, 6, 17), lookahead_days=10)
+
+    assert occasions == []
+
+
+def test_get_upcoming_occasions_keeps_gift_occasion_outside_lead_time(monkeypatch):
+    occasions_module._cache.clear()
+    monkeypatch.setattr(
+        occasions_module,
+        "fetch_holidays",
+        lambda country, year: [_holiday("Mother's Day", "2026-06-19")],
+    )
+
+    occasions = get_upcoming_occasions("BR", date(2026, 6, 17), lookahead_days=10)
+
+    assert [o["name"] for o in occasions] == ["Mother's Day"]
+
+
+def test_get_upcoming_occasions_lead_time_is_configurable(monkeypatch):
+    occasions_module._cache.clear()
+    monkeypatch.setattr(
+        occasions_module,
+        "fetch_holidays",
+        lambda country, year: [_holiday("Mother's Day", "2026-06-18")],
+    )
+
+    # days_until=1, but caller only requires 0 days of lead time.
+    occasions = get_upcoming_occasions("BR", date(2026, 6, 17), lookahead_days=10, gift_occasion_lead_time_days=0)
+
+    assert [o["name"] for o in occasions] == ["Mother's Day"]
+
+
+def test_get_upcoming_occasions_shopping_event_ignores_lead_time(monkeypatch):
+    occasions_module._cache.clear()
+    monkeypatch.setattr(
+        occasions_module,
+        "fetch_holidays",
+        lambda country, year: [_holiday("Black Friday", "2026-11-27", type_="Observance")],
+    )
+
+    # days_until=0 (the day itself) — would be dropped for a gift occasion, but Black Friday is exempt.
+    occasions = get_upcoming_occasions("US", date(2026, 11, 27), lookahead_days=10)
+
+    assert [o["name"] for o in occasions] == ["Black Friday"]

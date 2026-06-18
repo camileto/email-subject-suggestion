@@ -39,6 +39,15 @@ class SubjectRequest(BaseModel):
     global_trigger_rates: dict[str, dict[RateMetric, float]] = {}
     metric_priority: list[RateMetric] = ["conversion", "click", "open"]
     country: str | None = Field(default=None, description="ISO-3166 country code, e.g. BR, US")
+    gift_occasion_lead_time_days: int = Field(
+        default=2,
+        ge=0,
+        description=(
+            "Minimum days before a gift-giving occasion (Christmas, Mother's/Father's Day, Valentine's) "
+            "required to still reference it as a gift; below that it's dropped, not left to the LLM's "
+            "judgment. Doesn't apply to shopping events like Black Friday, where day-of is the point."
+        ),
+    )
     email_type: str | None = Field(
         default=None,
         description="Behavioral context, e.g. abandoned_cart, browse_abandonment, win_back, standard_campaign",

@@ -41,7 +41,10 @@ def suggest_subjects(request: SubjectRequest) -> SubjectResponse:
     if request.country:
         try:
             upcoming_occasions = get_upcoming_occasions(
-                request.country, date.today(), OCCASION_LOOKAHEAD_DAYS
+                request.country,
+                date.today(),
+                OCCASION_LOOKAHEAD_DAYS,
+                request.gift_occasion_lead_time_days,
             )
         except Exception:
             # Calendarific being down/misconfigured shouldn't block subject
