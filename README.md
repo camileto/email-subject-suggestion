@@ -2,7 +2,9 @@
 
 A FastAPI service that suggests email marketing subject lines, personalized
 to each customer's own open/click/conversion history and (optionally)
-upcoming local holidays and commercial dates, using the OpenAI API.
+upcoming local holidays and commercial dates. Supports OpenAI, Anthropic,
+and Gemini as the generating LLM, selected per request (see `provider`
+below).
 
 ## Design decisions
 
@@ -29,10 +31,12 @@ of LLM-powered copywriting tool:
   several candidates, embeds them (`text-embedding-3-small`), and drops any
   candidate whose cosine similarity to a previously sent subject crosses
   `SIMILARITY_THRESHOLD`. That's an actual computation, not a guess.
-- **Structured outputs, not prompt-engineered JSON.** The LLM call uses
-  OpenAI's structured outputs (Pydantic response format), so the response is
-  guaranteed to match the schema. No defensive "is this a string or an
-  object?" parsing on the way out.
+- **Structured outputs, not prompt-engineered JSON.** Whichever provider is
+  selected, the call uses that provider's own structured-output mechanism
+  (OpenAI's `response_format`, Anthropic's `messages.parse`, Gemini's
+  `response_schema`) against the same Pydantic schema, so the response is
+  guaranteed to match it. No defensive "is this a string or an object?"
+  parsing on the way out, regardless of provider.
 - **Personalization comes from real history, not generic copywriting trivia.**
   The prompt includes the specific subjects this customer has opened before
   and this customer's own per-trigger open rates — not a static market-wide
@@ -138,6 +142,20 @@ technically stops someone from pasting in a generic market benchmark
 instead, the exact thing this service was built to avoid doing internally.
 That's an inherent limit of any stateless API consuming caller-supplied
 data, not something this service can enforce.
+
+#### `provider`
+
+Optional, defaults to `"openai"`. Picks which LLM generates the subject
+variants: `"openai"`, `"anthropic"`, or `"gemini"`. Each provider needs its
+own API key configured server-side (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
+`GEMINI_API_KEY`) — requesting a provider whose key isn't set returns
+`400`, not a generic server error, so a misconfiguration is obvious instead
+of looking like a transient failure.
+
+The similarity-to-history dedup step always uses OpenAI embeddings
+(`text-embedding-3-small`) regardless of this choice — embeddings and text
+generation are independent axes, so `OPENAI_API_KEY` is required even when
+`provider` is `"anthropic"` or `"gemini"`.
 
 #### `email_type`
 
@@ -301,6 +319,9 @@ pip install -r requirements.txt
 cp .env.example .env
 # edit .env with your OpenAI API key
 # (optional) add a free Calendarific API key if you want to use "country"
+# (optional) add ANTHROPIC_API_KEY / GEMINI_API_KEY if you want to use
+# "provider": "anthropic" / "gemini" — OPENAI_API_KEY is still required
+# either way, since embeddings/dedup always run on OpenAI
 
 set -a; source .env; set +a
 uvicorn app.main:app --reload

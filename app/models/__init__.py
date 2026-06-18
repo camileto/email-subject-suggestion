@@ -30,6 +30,7 @@ class SentSubject(BaseModel):
 
 
 RateMetric = Literal["conversion", "click", "open"]
+Provider = Literal["openai", "anthropic", "gemini"]
 
 
 class SubjectRequest(BaseModel):
@@ -38,6 +39,15 @@ class SubjectRequest(BaseModel):
     sent_subjects: list[SentSubject] = []
     global_trigger_rates: dict[str, dict[RateMetric, float]] = {}
     metric_priority: list[RateMetric] = ["conversion", "click", "open"]
+    provider: Provider = Field(
+        default="openai",
+        description=(
+            "Which LLM generates the subject variants. Each provider needs its own API key "
+            "configured server-side (OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY) — "
+            "requesting a provider whose key isn't configured returns a 400. The similarity-"
+            "to-history dedup step always uses OpenAI embeddings regardless of this choice."
+        ),
+    )
     country: str | None = Field(default=None, description="ISO-3166 country code, e.g. BR, US")
     gift_occasion_lead_time_days: int = Field(
         default=2,

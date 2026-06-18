@@ -5,7 +5,14 @@ from fastapi import FastAPI, HTTPException
 
 from .clients.llm_client import generate_variants
 from .clients.openai_client import get_client
-from .config import CHAT_MODEL, MIN_PERSONAL_SAMPLE_SIZE, OCCASION_LOOKAHEAD_DAYS, SIMILARITY_THRESHOLD
+from .config import (
+    CHAT_MODEL,
+    CLAUDE_MODEL,
+    GEMINI_MODEL,
+    MIN_PERSONAL_SAMPLE_SIZE,
+    OCCASION_LOOKAHEAD_DAYS,
+    SIMILARITY_THRESHOLD,
+)
 from .models import SubjectRequest, SubjectResponse, SubjectVariant
 from .prompts import build_messages
 from .services.embeddings import max_similarity_to_history
@@ -18,11 +25,17 @@ app = FastAPI(
     title="Subject Suggestion API",
     description=(
         "Suggests email subject lines personalized to a customer's own open "
-        "history, using OpenAI structured outputs and embedding-based "
-        "duplicate detection."
+        "history, using structured LLM outputs (OpenAI, Anthropic, or "
+        "Gemini — caller's choice) and embedding-based duplicate detection."
     ),
     version="0.1.0",
 )
+
+_PROVIDER_MODELS = {
+    "openai": CHAT_MODEL,
+    "anthropic": CLAUDE_MODEL,
+    "gemini": GEMINI_MODEL,
+}
 
 
 @app.get("/health")
@@ -32,7 +45,10 @@ def health() -> dict[str, str]:
 
 @app.post("/api/v1/subjects", response_model=SubjectResponse)
 def suggest_subjects(request: SubjectRequest) -> SubjectResponse:
-    client = get_client()
+    try:
+        embeddings_client = get_client()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     trigger_rates = compute_trigger_rates(request.sent_subjects)
     trigger_sample_sizes = compute_trigger_sample_sizes(request.sent_subjects)
@@ -52,12 +68,17 @@ def suggest_subjects(request: SubjectRequest) -> SubjectResponse:
             logger.warning("Failed to fetch upcoming occasions for country=%s", request.country, exc_info=True)
 
     messages = build_messages(request, trigger_rates, upcoming_occasions)
-    raw_variants = generate_variants(client, messages, model=CHAT_MODEL)
+    try:
+        raw_variants = generate_variants(
+            request.provider, messages, model=_PROVIDER_MODELS[request.provider]
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     history_subjects = [s.subject for s in request.sent_subjects]
     variants: list[SubjectVariant] = []
     for raw in raw_variants:
-        similarity = max_similarity_to_history(client, raw.subject, history_subjects)
+        similarity = max_similarity_to_history(embeddings_client, raw.subject, history_subjects)
         if similarity >= SIMILARITY_THRESHOLD:
             continue
         rate, rate_metric, rate_source = resolve_rate(

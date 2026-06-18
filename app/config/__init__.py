@@ -3,6 +3,13 @@ import os
 CHAT_MODEL = os.environ.get("CHAT_MODEL", "gpt-4o-mini")
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small")
 
+# Alternate providers (selected per-request via SubjectRequest.provider). Each
+# needs its own API key; embeddings/dedup always stay on OpenAI regardless.
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+
 # Variants whose subject is at least this similar (cosine similarity on
 # embeddings) to one already sent to the customer are dropped, since
 # asking the LLM to self-police a similarity percentage in the prompt is
