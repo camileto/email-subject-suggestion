@@ -99,6 +99,28 @@ Request body:
 }
 ```
 
+Response:
+
+```json
+{
+  "customer_id": "123",
+  "variants": [
+    {
+      "subject": "Maria, there's still time to grab the Runner",
+      "preheader": "The promo price disappears soon — yours is still in stock.",
+      "trigger": "loss_aversion",
+      "rationale": "Builds on a discount that's about to disappear, similar to what previously worked for this customer.",
+      "similarity_to_history": 0.41,
+      "estimated_rate": 0.09,
+      "estimated_rate_metric": "conversion",
+      "estimated_rate_source": "global_history"
+    }
+  ]
+}
+```
+
+The fields below break down each part of the request body in more detail.
+
 `global_trigger_rates` is optional: a cross-customer rate per trigger and
 metric, computed by the caller (this service is stateless and has no
 database of its own) — used only as a fallback when this specific customer
@@ -261,28 +283,7 @@ above:
 
 Note the Christmas one only happens because `days_until=18` clears the
 `gift_occasion_lead_time_days` default of `2` — closer than that, this
-exact occasion would never have reached the model in the first place (see
-below).
-
-Response:
-
-```json
-{
-  "customer_id": "123",
-  "variants": [
-    {
-      "subject": "Maria, there's still time to grab the Runner",
-      "preheader": "The promo price disappears soon — yours is still in stock.",
-      "trigger": "loss_aversion",
-      "rationale": "Builds on a discount that's about to disappear, similar to what previously worked for this customer.",
-      "similarity_to_history": 0.41,
-      "estimated_rate": 0.09,
-      "estimated_rate_metric": "conversion",
-      "estimated_rate_source": "global_history"
-    }
-  ]
-}
-```
+exact occasion would never have reached the model in the first place.
 
 ## Running locally
 
