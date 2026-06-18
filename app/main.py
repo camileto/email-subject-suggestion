@@ -68,6 +68,7 @@ def suggest_subjects(request: SubjectRequest) -> SubjectResponse:
         variants.append(
             SubjectVariant(
                 subject=raw.subject,
+                preheader=raw.preheader,
                 trigger=raw.trigger,
                 rationale=raw.rationale,
                 similarity_to_history=round(similarity, 3),

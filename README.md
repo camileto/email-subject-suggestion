@@ -49,6 +49,12 @@ of LLM-powered copywriting tool:
   `country` against the Calendarific API and only ever hands the model
   dates that API actually returned — never lets it guess a holiday or date
   on its own.
+- **Preheader isn't an afterthought.** Inbox apps (Gmail, Outlook...) show a
+  preview snippet next to the subject, pulled from the start of the email
+  body unless something better is supplied — usually template boilerplate
+  if no one bothers. Each variant comes with a `preheader` generated
+  alongside its `subject`, written to complement it rather than repeat it,
+  since the two work together to earn the open.
 
 ## API
 
@@ -206,6 +212,7 @@ Response:
   "variants": [
     {
       "subject": "Maria, there's still time to grab the Runner",
+      "preheader": "The promo price disappears soon — yours is still in stock.",
       "trigger": "loss_aversion",
       "rationale": "Builds on a discount that's about to disappear, similar to what previously worked for this customer.",
       "similarity_to_history": 0.41,

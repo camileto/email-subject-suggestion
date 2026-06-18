@@ -45,6 +45,7 @@ class SubjectRequest(BaseModel):
 
 class SubjectVariant(BaseModel):
     subject: str
+    preheader: str
     trigger: str
     rationale: str
     similarity_to_history: float
